@@ -1,0 +1,8 @@
+total 80
+-rw-rw-r-- 1 jeansb jeansb     0 Jul 19 21:11 list.txt
+-rw------- 1 jeansb jeansb   163 Jun 27 02:07 makefile
+-rwxrwxr-x 1 jeansb jeansb 23960 Jul 19 21:11 servidor
+-rw------- 1 jeansb jeansb 27198 Jul 19 21:11 servidor.cpp
+-rw-rw-r-- 1 jeansb jeansb 19632 Jul 19 21:11 servidor.o
+-rw------- 1 jeansb jeansb    14 Jul 19 15:15 taxa.txt
+-rw-rw-r-- 1 jeansb jeansb     0 Jul  4 18:22 teste.txt
