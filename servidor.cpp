@@ -46,7 +46,22 @@ int ocupa = 0;
 #define GetCurrentDir getcwd
 #endif
 #define MAXLINE 4096 /*Tamanho ḿáximo*/
-#define LISTENQ 8 /*Número máximo de conexoes*/
+#define LISTENQ 10 /*Número máximo de conexoes*/
+
+
+
+
+struct clientestruct
+{
+    int taxa;
+    char ip[20];
+
+};
+
+typedef struct clientestruct client;
+
+
+
 
 int main (int argc, char **argv)
 {
@@ -180,34 +195,35 @@ int main (int argc, char **argv)
 
 
 
-            strcpy(controle, "220 Service ready for new user.\n");
-            write(clientsockfd, controle, sizeof(controle));
-            recv(clientsockfd, buffer, sizeof(buffer),0);
-            strcpy(controle, "230 User logged in, proceed.\n");
-            write(clientsockfd, controle, sizeof(controle));
-            recv(clientsockfd, buffer, sizeof(buffer),0);
+        strcpy(controle, "220 Service ready for new user.\n");
+        write(clientsockfd, controle, sizeof(controle));
+        read(clientsockfd, buffer, sizeof(buffer));
+        cout<<buffer<<endl;
+        strcpy(controle, "230 User logged in, proceed.\n");
+        write(clientsockfd, controle, sizeof(controle));
+        read(clientsockfd, buffer, sizeof(buffer));
 
 
-            //cout<<"\nclientsockfd: "<<clientsockfd<<"\n";
-            cout<<"Recebendo conexão..."<<endl;
+        //cout<<"\nclientsockfd: "<<clientsockfd<<"\n";
+        cout<<"Recebendo conexão..."<<endl;
 
-            cout<<"\nNumero de clientes: -> "<<numcliente+1<<endl;
+        cout<<"\nNumero de clientes: -> "<<numcliente+1<<endl;
 
 
-            //Inicializa a thread
-            if (pthread_create(&(thread[numcliente]), NULL, Servidor, &clientsockfd) != 0)   //if it’s 0, it’s child process
-            {
-                perror("Problema na criação da thread!");
-                exit(1);
-            }
-            cout<<"\nThread: -> "<<thread[numcliente]<<endl;
-            pthread_detach(thread[numcliente]);
-            numcliente++;
+        //Inicializa a thread
+        if (pthread_create(&(thread[numcliente]), NULL, Servidor, &clientsockfd) != 0)   //if it’s 0, it’s child process
+        {
+            perror("Problema na criação da thread!");
+            exit(1);
+        }
+        cout<<"\nThread: -> "<<thread[numcliente]<<endl;
+        pthread_detach(thread[numcliente]);
+        numcliente++;
 
-            /*strcpy(controle, "120 Service ready in 0.05 minutes");
-            write(clientsockfd, controle, sizeof(controle));
-            cout<<"\nServidor congestionado"<<endl;
-            sleep(5);*/
+        /*strcpy(controle, "120 Service ready in 0.05 minutes");
+        write(clientsockfd, controle, sizeof(controle));
+        cout<<"\nServidor congestionado"<<endl;
+        sleep(5);*/
 
     }
 
@@ -324,41 +340,15 @@ void* Servidor(void* arg)
     int portclient;
     char *token,*dummy;
     struct stat obj;
-
+    client *cliente;
+    cliente = (client*) malloc(sizeof(client));
     int comando;
 
-    //recv(sockEntrada, buf, sizeof(buf), MSG_WAITALL);
-
-    if(strcmp(buf, "1\n") == 0)//verifica o modo passivo
-        pasv = true;
-
-    //cout<<pasv<<endl;
 
 
 
 
-    if (pasv == true)
-    {
-
-        portclient = 2000;
-
-        socketdados = create_socket(portclient);
-
-        if((sockcli = accept (socketdados, (struct sockaddr *) &clienteaddr, &tamanho)) < 0)
-        {
-            perror("Problema em aceitar conexão!");
-            exit(1);
-        }
-        else
-        {
-            cout<<"\nConexão aceita!"<<endl;
-        }
-
-    }
-
-
-
-    while(strcmp("quit\n",buf)!=0 || strcmp("QUIT\n",buf)!=0)
+    while(1)
     {
 
         memset(&buf, 0, sizeof(buf));
@@ -388,81 +378,14 @@ void* Servidor(void* arg)
         }
 
 
-        //CHANGE WORKING DIRECTORY
-        else if (strcmp("CWD",token)==0||strcmp("cwd",token)==0)
-        {
-            //token = strtok(NULL," \n");
-            memset(&buf,0,sizeof(buf));
-            recv(sockEntrada,buf,sizeof(buf),MSG_WAITALL);
-            fflush(stdin);
-            //cout<<"\nLine: "<<__LINE__<<"\n";
-
-            //cout<<"Path given is: "<<buf<<endl;
-
-            //cout<<"\nLine: "<<__LINE__<<"\n";
-
-            if(chdir(buf)<0)
-            {
-                send(socketdados,"0",MAXLINE,0);
-                //write(socketdados, "0", sizeof(buf));
-            }
-            else
-            {
-
-                send(socketdados,"1",MAXLINE,0);
-                //write(socketdados, "1", sizeof(buf));
-            }
-
-        }
-
-
-        else if (strcmp("PUT",token)==0 || strcmp("put",token)==0)
-        {
-            char port[MAXLINE],buffer[MAXLINE],char_num_blks[MAXLINE],char_num_last_blk[MAXLINE],check[MAXLINE];
-            int datasock,num_blks,num_last_blk,i;
-            FILE *fp;
-
-            memset(&buf,0,sizeof(buf));
-            fflush(stdin);
-
-            recv(socketdados,buf,sizeof(buf),MSG_WAITALL);
-
-            //cout<<"Filename given is: "<<token<<endl;
-            recv(socketdados,check,MAXLINE,0);
-            //cout<<check;
-            if(strcmp("1",check)==0)
-            {
-                if((fp=fopen(buf,"w"))==NULL)
-                    cout<<"Erro na criação do arquivo!\n";
-                else
-                {
-                    recv(socketdados, char_num_blks, MAXLINE,0);
-                    num_blks=atoi(char_num_blks);
-                    for(i= 0; i < num_blks; i++)
-                    {
-                        recv(socketdados, buffer, MAXLINE,0);
-                        fwrite(buffer,sizeof(char),MAXLINE,fp);
-                        //cout<<buffer<<endl;
-                    }
-                    recv(socketdados, char_num_last_blk, MAXLINE,0);
-                    num_last_blk=atoi(char_num_last_blk);
-                    if (num_last_blk > 0)
-                    {
-                        recv(socketdados, buffer, MAXLINE,0);
-                        fwrite(buffer,sizeof(char),num_last_blk,fp);
-                        //cout<<buffer<<endl;
-                    }
-                    fclose(fp);
-                    cout<<"\nDownload do arquivo concluido!."<<endl;
-                }
-            }
-        }
 
         else if (strcmp("PORT",command)==0)
         {
             int i;
-            char ip[20]="";
+            char ip[20]="", aux3[20], aux2[20];
             int aux;
+            FILE *arq;
+            pasv = false;
             for(i=0; i<6; i++)
             {
                 if(i<3)
@@ -491,9 +414,33 @@ void* Servidor(void* arg)
                 }
             }
 
+            strcpy(cliente->ip, ip);
 
 
-            printf("\nIP = %s \nPORTA = %d\n", ip, portclient);
+
+            if(!(arq = fopen("taxa.txt", "r")))
+            {
+                cout<<"error"<<endl;
+            }
+
+            char linha[32];
+            sscanf(cliente->ip, "%s", aux2);
+            while(fgets(linha, sizeof(linha), arq)!=NULL)
+            {
+                sscanf(linha, "%s", aux3);
+                if((strcmp(aux3, aux2))==0)
+                {
+                    cout<<"\n\n"<<aux3<<"    "<<aux2<<endl;
+                    fgets(linha, sizeof(linha), arq);
+                    cliente->taxa = atoi(linha);
+                }
+            }
+            pclose(arq);
+
+
+
+            cout<<"IP= "<<cliente->ip<<"\nTaxa do cliente= "<<cliente->taxa<<endl;
+            cout<<"IP= "<<ip<<"\nPorta= "<<portclient<<endl;
 
 
             strcpy(controle, "200 Command okay.\n");
@@ -519,6 +466,96 @@ void* Servidor(void* arg)
 
 
 
+
+        else if (strcmp("PASV",command)==0)
+        {
+            /*int i;
+            char ip[20]="";
+            int aux;
+            pasv = true;
+
+
+            portclient = 2000;
+
+            socketdados = create_socket(portclient);
+
+            if((sockcli = accept (socketdados, (struct sockaddr *) &clienteaddr, &tamanho)) < 0)
+            {
+            perror("Problema em aceitar conexão!");
+            exit(1);
+            }
+            else
+            {
+            cout<<"\nConexão aceita!"<<endl;
+            }
+
+
+
+
+
+            for(i=0; i<6; i++)
+            {
+                if(i<3)
+                {
+                    token = strtok(NULL,",");
+                    strcat(ip, token);
+                    strcat(ip, ".");
+                }
+                else if(i==3)
+                {
+                    token = strtok(NULL,",");
+                    strcat(ip, token);
+                }
+                else if(i==4)
+                {
+                    token = strtok(NULL,",");
+                    portclient = atoi(token);
+                    portclient = portclient*256;
+                }
+
+                else
+                {
+                    token = strtok(NULL,"\n");
+                    aux = atoi(token);
+                    portclient = portclient+aux;
+                }
+
+
+
+
+            }
+
+
+
+            cout<<"IP= "<<ip<<"\nPorta= "<<portclient<<endl;
+
+
+            strcpy(controle, "227 Entering Passive Mode (192,168,150,90,195,149)..\n");
+            write(sockEntrada, controle, sizeof(controle));
+
+            if ((socketdados = socket (AF_INET, SOCK_STREAM, 0)) <0)
+            {
+                cerr<<"Problema na criação do socket!"<<endl;
+                exit(2);
+            }
+
+
+            memset(&clienteaddr, 0, sizeof(clienteaddr)); //zera a estrutura
+
+            clienteaddr.sin_family = AF_INET;
+            clienteaddr.sin_addr.s_addr= inet_addr(ip);
+            clienteaddr.sin_port =  htons(portclient); //converte em binário
+            */
+            strcpy(controle, "502 Command not implemented.\n");
+            write(sockEntrada, controle, sizeof(controle));
+
+
+        }
+
+
+
+
+
         else if (strcmp("LIST",command)==0)
         {
 
@@ -528,24 +565,31 @@ void* Servidor(void* arg)
 
 
 
-
-            if (connect(socketdados, (struct sockaddr *) &clienteaddr, sizeof(clienteaddr))<0)
+            if (pasv ==false)
             {
-                cerr<<"Problema na conexão com o servidor!"<<endl;
-                numcliente--;
-                close(sockEntrada);
-                pthread_exit((void*) 0);
+                if (connect(socketdados, (struct sockaddr *) &clienteaddr, sizeof(clienteaddr))<0)
+                {
+                    cerr<<"Problema na conexão com o servidor!"<<endl;
+                    numcliente--;
+                    close(sockEntrada);
+                    pthread_exit((void*) 0);
+                }
+                else
+                {
+                    cout<<"\nConexão aceita!"<<endl;
+                }
+
             }
             else
             {
-                cout<<"\nConexão aceita!"<<endl;
+
+
+
             }
 
 
             system("ls -l>list.txt");
 
-
-            cout<<"\nLISTTTT!."<<endl;
             FILE *in;
 
             if(!(in = fopen("list.txt", "r")))
@@ -573,13 +617,14 @@ void* Servidor(void* arg)
 
         else if (strcmp("RETR",token)==0)
         {
-            char port[MAXLINE],buffer[MAXLINE],char_num_blks[MAXLINE],char_num_last_blk[MAXLINE];
+            char port[MAXLINE], *tokk, tokk2, buffer[MAXLINE],char_num_blks[MAXLINE],char_num_last_blk[MAXLINE];
             int lSize,num_blks,num_last_blk,i;
-
+            FILE *fp;
             char filename [20];
-            int filehandle, sizee;
+            long int sizee, taxa=0;
+            int tam;
 
-            strcpy(controle, "150 about to open data connection\n");
+            strcpy(controle, "150 about to open data connection.\n");
             write(sockEntrada, controle, sizeof(controle));
 
 
@@ -599,23 +644,48 @@ void* Servidor(void* arg)
 
 
 
-            token = strtok(NULL, "\n");
-            //sscanf(buf, "%s%s", filename, filename);
-            strcpy(filename, token);
+            strcpy(filename, strtok(NULL,"."));
+            strcat(filename,".txt");
+
             cout<<filename<<endl;
-            stat(filename, &obj);
-            filehandle = open(filename, O_RDONLY);
-            sizee = obj.st_size;
 
-            if(filehandle==-1){
-                sizee=0;
+
+            if ((fp=fopen(filename,"r"))!=NULL)
+            {
+                //size of file
+                fseek (fp, 0, SEEK_END);
+                sizee = ftell (fp);
+                rewind (fp);
+                num_blks = sizee/MAXLINE;
+                num_last_blk = sizee%MAXLINE;
+                sprintf(char_num_blks,"%d",num_blks);
+
+                while(fgets(buf, sizeof(buf), fp)!=NULL)
+                {
+                    tam = strlen(buf);
+                    taxa+=tam;
+                    if(taxa>=cliente->taxa)
+                    {
+                        taxa = 0;
+                        sleep(1);
+                    }
+                    write(socketdados, buf, tam);
+                    memset(&buf, 0, sizeof(buf));
+
+
+
+                }
+                close(socketdados);
+                strcpy(controle, "226 Closing data connection. Requested file action successful.\n");
+                write(sockEntrada, controle, sizeof(controle));
+                pclose(fp);
+
             }
-
-            send(socketdados,&sizee,sizeof(int),0);
-
-            if(sizee){
-                cout<<"testando"<<endl;
-                sendfile(socketdados,filehandle,NULL,sizee);
+            else
+            {
+                strcpy(controle, "450 File unavailable.\n");
+                write(sockEntrada, controle, sizeof(controle));
+                close(socketdados);
             }
 
 
@@ -636,6 +706,39 @@ void* Servidor(void* arg)
             endd = strlen(curr_dir);
             write(sockEntrada,curr_dir,endd);
         }
+
+
+
+
+        //CHANGE WORKING DIRECTORY
+        else if (strcmp("CWD",token)==0||strcmp("cwd",token)==0)
+        {
+
+            //token = strtok(NULL," \n");
+            memset(&buf,0,sizeof(buf));
+            recv(sockEntrada,buf,sizeof(buf),MSG_WAITALL);
+            fflush(stdin);
+            //cout<<"\nLine: "<<__LINE__<<"\n";
+
+            //cout<<"Path given is: "<<buf<<endl;
+
+            //cout<<"\nLine: "<<__LINE__<<"\n";
+
+            if(chdir(buf)<0)
+            {
+                send(socketdados,"0",MAXLINE,0);
+                //write(socketdados, "0", sizeof(buf));
+            }
+            else
+            {
+
+                send(socketdados,"1",MAXLINE,0);
+                //write(socketdados, "1", sizeof(buf));
+            }
+
+        }
+
+
 
 
         //CHANGE WORKING DIRECTORY
@@ -770,8 +873,58 @@ void* Servidor(void* arg)
 
 
 
-        else if(strcmp("quit",buf)==0 || strcmp("QUIT",buf)==0)
+
+        else if (strcmp("PUT",token)==0 || strcmp("put",token)==0)
         {
+            char port[MAXLINE],buffer[MAXLINE],char_num_blks[MAXLINE],char_num_last_blk[MAXLINE],check[MAXLINE];
+            int datasock,num_blks,num_last_blk,i;
+            FILE *fp;
+
+            memset(&buf,0,sizeof(buf));
+            fflush(stdin);
+
+            recv(socketdados,buf,sizeof(buf),MSG_WAITALL);
+
+            //cout<<"Filename given is: "<<token<<endl;
+            recv(socketdados,check,MAXLINE,0);
+            //cout<<check;
+            if(strcmp("1",check)==0)
+            {
+                if((fp=fopen(buf,"w"))==NULL)
+                    cout<<"Erro na criação do arquivo!\n";
+                else
+                {
+                    recv(socketdados, char_num_blks, MAXLINE,0);
+                    num_blks=atoi(char_num_blks);
+                    for(i= 0; i < num_blks; i++)
+                    {
+                        recv(socketdados, buffer, MAXLINE,0);
+                        fwrite(buffer,sizeof(char),MAXLINE,fp);
+                        //cout<<buffer<<endl;
+                    }
+                    recv(socketdados, char_num_last_blk, MAXLINE,0);
+                    num_last_blk=atoi(char_num_last_blk);
+                    if (num_last_blk > 0)
+                    {
+                        recv(socketdados, buffer, MAXLINE,0);
+                        fwrite(buffer,sizeof(char),num_last_blk,fp);
+                        //cout<<buffer<<endl;
+                    }
+                    fclose(fp);
+                    cout<<"\nDownload do arquivo concluido!."<<endl;
+                }
+            }
+        }
+
+
+
+
+        else if(strcmp("QUIT",command)==0)
+        {
+
+            strcpy(controle, "221 service closing control data connection.\n");
+            write(sockEntrada, controle, sizeof(controle));
+
             numcliente--;
             //if (n < 0)
             //    cout<<"Read error"<<endl;
