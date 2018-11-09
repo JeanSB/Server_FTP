@@ -1,0 +1,16 @@
+
+
+
+
+pthread_mutex_t mutex
+
+
+
+
+
+if(mutex<=valorTaxa){
+pthread_mutex_unlock(mutex);
+}
+else{
+pthread_mutex_lock(mutex);
+}

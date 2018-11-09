@@ -1,0 +1,11 @@
+total 13576
+-rw------- 1 default default       0 Jul 20 15:54 list.txt
+-rw------- 1 default default     163 Jun 27 02:07 makefile
+-rw-rw-r-- 1 default default     119 Jul 20 02:12 mutex.txt
+-rwxrwxr-x 1 default default   24032 Jul 20 15:52 servidor
+-rw------- 1 default default   29795 Jul 20 15:24 servidor.cpp
+-rw-rw-r-- 1 default default   21152 Jul 20 15:52 servidor.o
+-rw------- 1 default default      64 Jul 20 15:18 taxa.txt
+-rw------- 1 default default 5525325 Jul 20 13:27 teste2.txt
+-rw------- 1 default default 2754404 Dec 12  2017 teste.pdf
+-rw------- 1 default default 5525325 Jul 20 13:27 teste.txt
